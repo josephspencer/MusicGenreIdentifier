@@ -4,7 +4,7 @@ import glob
 import sys
 
 
-def loadData(path):
+def loadData(path, passedInGenre):
 	y, sr = librosa.core.load(path)
 	# get features
 	tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
@@ -54,19 +54,21 @@ def loadData(path):
 	rolloff_mean = np.mean(rolloff)
 	mfcc_std = np.std(mfcc)
 	mfcc_mean = np.mean(mfcc)	
-	csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(stftD_mean) + "," + str(freq_std) + "," + str(freq_mean) + "," + str(cqt_std) + "," + str(cqt_mean) + "," + str(iirt_std) + "," + str(iirt_mean) + "," + str(H_std) + "," + str(H_mean) + "," + str(P_mean) + "," + str(P_std) + "," + str(rms_std) + "," + str(rms_mean) + "," + str(onset_env_std) + "," + str(onset_env_mean) + "," + str(zcr_std) + "," + str(zcr_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(contrast_std) + "," + str(contrast_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean)
+	#csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(stftD_mean) + "," + str(freq_std) + "," + str(freq_mean) + "," + str(cqt_std) + "," + str(cqt_mean) + "," + str(iirt_std) + "," + str(iirt_mean) + "," + str(H_std) + "," + str(H_mean) + "," + str(P_mean) + "," + str(P_std) + "," + str(rms_std) + "," + str(rms_mean) + "," + str(onset_env_std) + "," + str(onset_env_mean) + "," + str(zcr_std) + "," + str(zcr_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(contrast_std) + "," + str(contrast_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean)
 	#print(csv)
-	extractedArrays = [[beat_frames], [stftD], [frequencies], [cqt], [iirt], [H], [P], [rms], [onset_env], [zcr], [cent], [contrast], [spec_bw], [rolloff], [mfcc]]
+#	extractedArrays = [[beat_frames], [stftD], [frequencies], [cqt], [iirt], [H], [P], [rms], [onset_env], [zcr], [cent], [contrast], [spec_bw], [rolloff], [mfcc]]
+	csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(iirt_std) + "," + str(H_std) + "," + str(rms_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean) + "," + str(passedInGenre)
 	return csv
 
 #directory = "/Users/joeyspencer/AI/AI_final_project/songfiles/classical/*"
 directory = sys.argv[1]
 directory += "/*"
 outputCSV = sys.argv[2]
+passInGenre = sys.argv[3]
 print(directory)
 with open(sys.argv[2], "a+") as fCSV:
 	for path in glob.iglob(directory):
-		csv = loadData(path)
+		csv = loadData(path, passInGenre)
 		print("began " + str(path))
 		fCSV.write(csv)
 		fCSV.write('\n')

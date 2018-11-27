@@ -11,6 +11,7 @@ from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.linear_model import SGDClassifier
+from sklearn import tree
 
 def find_dist(point, centroid):
 	running_sum = 0.0
@@ -42,22 +43,22 @@ test_y = test_data["genre"].as_matrix()
 dt = DecisionTreeClassifier(criterion="gini",min_impurity_decrease=.01)
 dt.fit(train_X,train_y)
 pred_y = dt.predict(test_X)
-print(pred_y)
+print("Decision tree: " + str(pred_y))
 
 # kNN
 knn = KNeighborsClassifier(n_neighbors = 5, weights="distance")
 knn.fit(train_X,train_y)
 pred_y = knn.predict(test_X)
-print(pred_y)
+print("kNN: " + str(pred_y))
 
 #MLP
-mlp = MLPClassifier(solver="sgd",max_iter=1000,hidden_layer_sizes=1000)
+mlp = MLPClassifier(solver="adam",max_iter=1000,hidden_layer_sizes=1000)
 mlp.fit(train_X,train_y)
 pred_y = mlp.predict(test_X)
-print(pred_y)
+print("mlp: " + str(pred_y))
 
 # kmeans clustering
-km = KMeans(n_clusters = 6, init='k-means++')
+km = KMeans(n_clusters = 6, init='k-means++', max_iter=1000, algorithm="elkan")
 km.fit(train_X,train_y)
 ans = []
 for i in range(len(test_X)):
@@ -70,10 +71,10 @@ for i in range(len(test_X)):
 	d6 = find_dist(point,km.cluster_centers_[5])
 	distances = [d1, d2, d3, d4, d5, d6]
 	ans.append(distances.index(min(distances)) + 1)
-print(ans)
+print("kmeans: " + str(ans))
 
 #SGD
 clf = SGDClassifier(loss="log", penalty="l1", max_iter=1000)
 clf.fit(train_X, train_y)
 pred_y = clf.predict(test_X)
-print(pred_y)
+print("sgd: " + str(pred_y))

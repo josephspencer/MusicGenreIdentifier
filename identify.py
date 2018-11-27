@@ -10,7 +10,33 @@ from sklearn.metrics import f1_score, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import os
+from sklearn.kernel_approximation import RBFSampler
+from sklearn.linear_model import SGDClassifier
+from sklearn import tree
+from collections import Counter
+
 # command line: python identify.py /path/to/testfile.mp3
+
+def genre(num):
+	if num == '1':
+		return 'classical'
+	elif num == '2':
+		return 'country'
+	elif num == '3':
+		return 'electronic'
+	elif num == '4':
+		return 'hip hop'
+	elif num == '5':
+		return 'jazz'
+	elif num == '6':
+		return 'pop'
+	return None
+
+def find_dist(point, centroid):
+	running_sum = 0.0
+	for i in range(len(point)):
+		running_sum += float(pow((point[i] - centroid[i]),2))
+	return pow(running_sum,0.5)
 
 def loadData(path):
 	y, sr = librosa.core.load(path)
@@ -62,25 +88,27 @@ def loadData(path):
 	rolloff_mean = np.mean(rolloff)
 	mfcc_std = np.std(mfcc)
 	mfcc_mean = np.mean(mfcc)	
-	csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(stftD_mean) + "," + str(freq_std) + "," + str(freq_mean) + "," + str(cqt_std) + "," + str(cqt_mean) + "," + str(iirt_std) + "," + str(iirt_mean) + "," + str(H_std) + "," + str(H_mean) + "," + str(P_mean) + "," + str(P_std) + "," + str(rms_std) + "," + str(rms_mean) + "," + str(onset_env_std) + "," + str(onset_env_mean) + "," + str(zcr_std) + "," + str(zcr_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(contrast_std) + "," + str(contrast_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean) + ",0"
+	#csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(stftD_mean) + "," + str(freq_std) + "," + str(freq_mean) + "," + str(cqt_std) + "," + str(cqt_mean) + "," + str(iirt_std) + "," + str(iirt_mean) + "," + str(H_std) + "," + str(H_mean) + "," + str(P_mean) + "," + str(P_std) + "," + str(rms_std) + "," + str(rms_mean) + "," + str(onset_env_std) + "," + str(onset_env_mean) + "," + str(zcr_std) + "," + str(zcr_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(contrast_std) + "," + str(contrast_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean) + ",0"
+	csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(iirt_std) + "," + str(H_std) + "," + str(rms_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean) + ",0"
 	return csv
 
 # read in test file, get metrics
 testFile = sys.argv[1]
 outputCSV = "testFile.csv"
 with open(outputCSV, "a+") as fCSV:
-	print("began " + str(testFile))
+	print("Examining input file for audio data...")
 	csv = loadData(testFile)
 	fCSV.write(csv)
 	fCSV.write('\n')
-	print("completed " + str(testFile))
+	print("Completed extracting data from input.")
 	print('\n')
 	fCSV.close()
 
 # read in training data
-data_headers = ["tempo", "beat_frames_std", "duration", "stftD_std", "stftD_mean", "freq_std", "freq_mean", "cqt_std", "cqt_mean", "iirt_std", "iirt_mean", "H_std", "H_mean", "P_mean", "P_std", "rms_std", "rms_mean", "onset_env_std", "onset_env_mean", "zcr_std", "zcr_mean", "cent_std", "cent_mean", "contrast_std", "contrast_mean", "spec_bw_std", "spec_bw_mean", "rolloff_std", "rolloff_mean", "mfcc_std", "mfcc_mean", "genre"]
+#data_headers = ["tempo", "beat_frames_std", "duration", "stftD_std", "stftD_mean", "freq_std", "freq_mean", "cqt_std", "cqt_mean", "iirt_std", "iirt_mean", "H_std", "H_mean", "P_mean", "P_std", "rms_std", "rms_mean", "onset_env_std", "onset_env_mean", "zcr_std", "zcr_mean", "cent_std", "cent_mean", "contrast_std", "contrast_mean", "spec_bw_std", "spec_bw_mean", "rolloff_std", "rolloff_mean", "mfcc_std", "mfcc_mean", "genre"]
+data_headers = ["tempo", "beat_frames_std", "duration", "stftD_std", "iirt_std", "H_std", "rms_mean", "cent_std", "cent_mean", "spec_bw_std", "spec_bw_mean", "rolloff_std", "rolloff_mean", "mfcc_std", "mfcc_mean", "genre"]
 
-csvIn = pd.read_csv("allTrainCSV.csv", header=None, names=data_headers)
+csvIn = pd.read_csv("CutallTrainCSV.csv", header=None, names=data_headers)
 train_data = pd.DataFrame(csvIn, columns = data_headers)
 train_X = train_data.loc[:, "tempo":"mfcc_std"]
 X_headers = list(train_X)
@@ -94,20 +122,54 @@ test_X = test_data.loc[:, "tempo":"mfcc_std"]
 test_X = test_X.as_matrix()
 test_y = test_data["genre"].as_matrix()
 
+# run machine learning tools
+print("Machine Learning Tools and Classifications")
 #create decision tree
-dt = DecisionTreeClassifier(criterion="entropy",min_impurity_decrease=.01)
+dt = DecisionTreeClassifier(criterion="gini",min_impurity_decrease=.01)
 dt.fit(train_X,train_y)
 pred_y = dt.predict(test_X)
-print("Decision Tree: " + str(pred_y))
+print("Decision Tree: " + genre(str(pred_y[0])))
 
-knn = KNeighborsClassifier(n_neighbors = 5)
+# k nearest neighbor
+knn = KNeighborsClassifier(n_neighbors = 5, weights="distance")
 knn.fit(train_X,train_y)
 pred_y = knn.predict(test_X)
-print("KNN: " + str(pred_y))
+print("KNN: " + genre(str(pred_y[0])))
 
-mlp = MLPClassifier(solver="sgd",max_iter=1000,hidden_layer_sizes=1000)
-mlp.fit(train_X,train_y)
-pred_y = mlp.predict(test_X)
-print("MLP: " + str(pred_y))
+# mlp
+mlpans = []
+for j in range(0,20):
+	mlp = MLPClassifier(solver="adam",max_iter=1000,hidden_layer_sizes=1000)
+	mlp.fit(train_X,train_y)
+	pred_y = mlp.predict(test_X)
+	mlpans.append(pred_y[0])
+#print("MLP outputs: " + str(mlpans))
+most_common,num_most_common = Counter(mlpans).most_common(1)[0]
+print("MLP: " + genre(str(most_common)))
 
+# kmeans clustering
+kmeanresult = []
+for j in range(0,150):
+	km = KMeans(n_clusters = 6, init='k-means++', max_iter=1000, algorithm="elkan")
+	km.fit(train_X,train_y)
+	ans = []
+	point = test_X[0]
+	d1 = find_dist(point,km.cluster_centers_[0])
+	d2 = find_dist(point,km.cluster_centers_[1])
+	d3 = find_dist(point,km.cluster_centers_[2])
+	d4 = find_dist(point,km.cluster_centers_[3])
+	d5 = find_dist(point,km.cluster_centers_[4])
+	d6 = find_dist(point,km.cluster_centers_[5])
+	distances = [d1, d2, d3, d4, d5, d6]
+	result = distances.index(min(distances)) + 1
+	kmeanresult.append(result)
+#print("kmeans: " + str(kmeanresult))
+most_common,num_most_common = Counter(kmeanresult).most_common(1)[0]
+print("kmeans: " + genre(str(most_common)))
+
+#SGD
+clf = SGDClassifier(loss="log", penalty="l1", max_iter=1000)
+clf.fit(train_X, train_y)
+pred_y = clf.predict(test_X)
+print("sgd: " + genre(str(pred_y[0])))
 os.system("rm testFile.csv")
