@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import VotingClassifier, RandomForestClassifier
 import numpy as np
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.linear_model import SGDClassifier
@@ -32,7 +33,7 @@ train_X = train_X.as_matrix()
 train_y = train_data["genre"].as_matrix()
 
 # read in test data
-testIn = pd.read_csv("CuttestingCSV.csv", header=None, names=data_headers)
+testIn = pd.read_csv(sys.argv[1], header=None, names=data_headers)
 test_data = pd.DataFrame(testIn, columns = data_headers)
 #test_X = test_data.loc[:, "tempo":"mfcc_std"]
 test_X = test_data.loc[:, "tempo":"P_std"]
@@ -52,29 +53,42 @@ pred_y = knn.predict(test_X)
 print("kNN: " + str(pred_y))
 
 #MLP
-mlp = MLPClassifier(solver="adam",max_iter=1000,hidden_layer_sizes=1000)
-mlp.fit(train_X,train_y)
-pred_y = mlp.predict(test_X)
-print("mlp: " + str(pred_y))
+#mlp = MLPClassifier(solver="adam",max_iter=1000,hidden_layer_sizes=1000)
+#mlp.fit(train_X,train_y)
+#pred_y = mlp.predict(test_X)
+#print("mlp: " + str(pred_y))
 
 # kmeans clustering
-km = KMeans(n_clusters = 6, init='k-means++', max_iter=1000, algorithm="elkan")
-km.fit(train_X,train_y)
-ans = []
-for i in range(len(test_X)):
-	point = test_X[i]
-	d1 = find_dist(point,km.cluster_centers_[0])
-	d2 = find_dist(point,km.cluster_centers_[1])
-	d3 = find_dist(point,km.cluster_centers_[2])
-	d4 = find_dist(point,km.cluster_centers_[3])
-	d5 = find_dist(point,km.cluster_centers_[4])
-	d6 = find_dist(point,km.cluster_centers_[5])
-	distances = [d1, d2, d3, d4, d5, d6]
-	ans.append(distances.index(min(distances)) + 1)
-print("kmeans: " + str(ans))
+#km = KMeans(n_clusters = 6, init='k-means++', max_iter=1000, algorithm="elkan")
+#km.fit(train_X,train_y)
+#ans = []
+#for i in range(len(test_X)):
+#	point = test_X[i]
+#	d1 = find_dist(point,km.cluster_centers_[0])
+#	d2 = find_dist(point,km.cluster_centers_[1])
+#	d3 = find_dist(point,km.cluster_centers_[2])
+#	d4 = find_dist(point,km.cluster_centers_[3])
+#	d5 = find_dist(point,km.cluster_centers_[4])
+#	d6 = find_dist(point,km.cluster_centers_[5])
+#	distances = [d1, d2, d3, d4, d5, d6]
+#	ans.append(distances.index(min(distances)) + 1)
+#print("kmeans: " + str(ans))
 
 #SGD
 clf = SGDClassifier(loss="log", penalty="l1", max_iter=1000)
 clf.fit(train_X, train_y)
 pred_y = clf.predict(test_X)
 print("sgd: " + str(pred_y))
+
+#Random Forest
+forest = RandomForestClassifier(n_estimators = 100, max_depth = 5)
+forest.fit(train_X, train_y)
+pred_y = forest.predict(test_X)
+print("random forest: " + str(pred_y))
+print(forest.predict_proba(test_X))
+
+#Weighted Average Ensemble
+ensemble = VotingClassifier(estimators=[('rf', forest), ('knn', knn), ('sgd', clf)], voting='soft')
+ensemble.fit(train_X, train_y)
+pred_y = ensemble.predict(test_X)
+print("ensemble: " + str(pred_y))

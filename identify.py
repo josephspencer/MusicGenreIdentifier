@@ -8,6 +8,7 @@ from sklearn.cluster import KMeans
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import f1_score, accuracy_score
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.decomposition import PCA
 import numpy as np
 import os
 from sklearn.kernel_approximation import RBFSampler
@@ -173,3 +174,8 @@ clf.fit(train_X, train_y)
 pred_y = clf.predict(test_X)
 print("sgd: " + genre(str(pred_y[0])))
 os.system("rm testFile.csv")
+
+#PCA
+#pca = PCA(n_components=2, svd_solver="full")
+#pca.fit(train_X)
+
