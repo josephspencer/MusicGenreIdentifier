@@ -2,13 +2,7 @@ import librosa
 import sys
 import pandas as pd
 from scipy import stats
-from sklearn.tree import DecisionTreeClassifier, export_graphviz
-from sklearn.neural_network import MLPClassifier
-from sklearn.cluster import KMeans
-from sklearn.model_selection import cross_val_score
-from sklearn.metrics import f1_score, accuracy_score
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.decomposition import PCA
+from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 import os
 from sklearn.kernel_approximation import RBFSampler
@@ -43,17 +37,10 @@ def loadData(path):
 	y, sr = librosa.core.load(path)
 	# get features
 	tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
-	duration = librosa.get_duration(y=y, sr=sr)
 	stftD = np.abs(librosa.stft(y))
-	frequencies, d = librosa.ifgram(y, sr=sr)
-	cqt = np.abs(librosa.cqt(y, sr=sr))
 	iirt = np.abs(librosa.iirt(y))
-	tuning = librosa.estimate_tuning(y=y, sr=sr)
 	H, P = librosa.decompose.hpss(stftD)
-	S, phase = librosa.magphase(librosa.stft(y))
 	rms = librosa.feature.rmse(S=S)
-	onset_env = librosa.onset.onset_strength(y=y, sr=sr)
-	zcr = librosa.feature.zero_crossing_rate(y)
 	cent = librosa.feature.spectral_centroid(y=y, sr=sr)
 	contrast = librosa.feature.spectral_contrast(S=stftD, sr=sr)
 	spec_bw = librosa.feature.spectral_bandwidth(y=y, sr=sr)
@@ -62,34 +49,17 @@ def loadData(path):
 	# extract further data from features
 	beat_frames_std = np.std(beat_frames)
 	stftD_std = np.std(stftD)
-	stftD_mean = np.mean(stftD)
-	freq_std = np.std(frequencies)
-	freq_mean =  np.mean(frequencies)
-	cqt_std = np.std(cqt)
-	cqt_mean = np.mean(cqt)
 	iirt_std = np.std(iirt)
-	iirt_mean = np.mean(iirt)
 	H_std = np.std(H)
-	H_mean = np.mean(H)
-	P_std = np.std(P)
-	P_mean = np.mean(P)
-	rms_std = np.std(rms)
 	rms_mean = np.mean(rms)
-	onset_env_std = np.std(onset_env)
-	onset_env_mean = np.mean(onset_env)
-	zcr_std = np.std(zcr)
-	zcr_mean = np.mean(zcr)
 	cent_std = np.std(cent)
 	cent_mean = np.mean(cent)
-	contrast_std = np.std(contrast)
-	contrast_mean = np.mean(contrast)
 	spec_bw_std = np.std(spec_bw)
 	spec_bw_mean = np.mean(spec_bw)
 	rolloff_std = np.std(rolloff)
 	rolloff_mean = np.mean(rolloff)
 	mfcc_std = np.std(mfcc)
 	mfcc_mean = np.mean(mfcc)	
-	#csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(stftD_mean) + "," + str(freq_std) + "," + str(freq_mean) + "," + str(cqt_std) + "," + str(cqt_mean) + "," + str(iirt_std) + "," + str(iirt_mean) + "," + str(H_std) + "," + str(H_mean) + "," + str(P_mean) + "," + str(P_std) + "," + str(rms_std) + "," + str(rms_mean) + "," + str(onset_env_std) + "," + str(onset_env_mean) + "," + str(zcr_std) + "," + str(zcr_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(contrast_std) + "," + str(contrast_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean) + ",0"
 	csv = str(tempo) + "," + str(beat_frames_std) + "," + str(duration) + "," + str(stftD_std) + "," + str(iirt_std) + "," + str(H_std) + "," + str(rms_mean) + "," + str(cent_std) + "," + str(cent_mean) + "," + str(spec_bw_std) + "," + str(spec_bw_mean) + "," + str(rolloff_std) + "," + str(rolloff_mean) + "," + str(mfcc_std) + "," + str(mfcc_mean) + ",0"
 	return csv
 
@@ -106,7 +76,6 @@ with open(outputCSV, "a+") as fCSV:
 	fCSV.close()
 
 # read in training data
-#data_headers = ["tempo", "beat_frames_std", "duration", "stftD_std", "stftD_mean", "freq_std", "freq_mean", "cqt_std", "cqt_mean", "iirt_std", "iirt_mean", "H_std", "H_mean", "P_mean", "P_std", "rms_std", "rms_mean", "onset_env_std", "onset_env_mean", "zcr_std", "zcr_mean", "cent_std", "cent_mean", "contrast_std", "contrast_mean", "spec_bw_std", "spec_bw_mean", "rolloff_std", "rolloff_mean", "mfcc_std", "mfcc_mean", "genre"]
 data_headers = ["tempo", "beat_frames_std", "duration", "stftD_std", "iirt_std", "H_std", "rms_mean", "cent_std", "cent_mean", "spec_bw_std", "spec_bw_mean", "rolloff_std", "rolloff_mean", "mfcc_std", "mfcc_mean", "genre"]
 
 csvIn = pd.read_csv("CutallTrainCSV.csv", header=None, names=data_headers)
@@ -123,59 +92,6 @@ test_X = test_data.loc[:, "tempo":"mfcc_std"]
 test_X = test_X.as_matrix()
 test_y = test_data["genre"].as_matrix()
 
-# run machine learning tools
-print("Machine Learning Tools and Classifications")
-#create decision tree
-dt = DecisionTreeClassifier(criterion="gini",min_impurity_decrease=.01)
-dt.fit(train_X,train_y)
-pred_y = dt.predict(test_X)
-print("Decision Tree: " + genre(str(pred_y[0])))
-
-# k nearest neighbor
-knn = KNeighborsClassifier(n_neighbors = 5, weights="distance")
-knn.fit(train_X,train_y)
-pred_y = knn.predict(test_X)
-print("KNN: " + genre(str(pred_y[0])))
-
-# mlp
-mlpans = []
-for j in range(0,20):
-	mlp = MLPClassifier(solver="adam",max_iter=1000,hidden_layer_sizes=1000)
-	mlp.fit(train_X,train_y)
-	pred_y = mlp.predict(test_X)
-	mlpans.append(pred_y[0])
-#print("MLP outputs: " + str(mlpans))
-most_common,num_most_common = Counter(mlpans).most_common(1)[0]
-print("MLP: " + genre(str(most_common)))
-
-# kmeans clustering
-kmeanresult = []
-for j in range(0,150):
-	km = KMeans(n_clusters = 6, init='k-means++', max_iter=1000, algorithm="elkan")
-	km.fit(train_X,train_y)
-	ans = []
-	point = test_X[0]
-	d1 = find_dist(point,km.cluster_centers_[0])
-	d2 = find_dist(point,km.cluster_centers_[1])
-	d3 = find_dist(point,km.cluster_centers_[2])
-	d4 = find_dist(point,km.cluster_centers_[3])
-	d5 = find_dist(point,km.cluster_centers_[4])
-	d6 = find_dist(point,km.cluster_centers_[5])
-	distances = [d1, d2, d3, d4, d5, d6]
-	result = distances.index(min(distances)) + 1
-	kmeanresult.append(result)
-#print("kmeans: " + str(kmeanresult))
-most_common,num_most_common = Counter(kmeanresult).most_common(1)[0]
-print("kmeans: " + genre(str(most_common)))
-
-#SGD
-clf = SGDClassifier(loss="log", penalty="l1", max_iter=1000)
-clf.fit(train_X, train_y)
-pred_y = clf.predict(test_X)
-print("sgd: " + genre(str(pred_y[0])))
-os.system("rm testFile.csv")
-
-#PCA
-#pca = PCA(n_components=2, svd_solver="full")
-#pca.fit(train_X)
-
+# run Random Forest
+forest = RandomForestClassifier(n_estimators = 100)
+forest.fit(train_X, train_y)
