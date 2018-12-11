@@ -1,6 +1,0 @@
-/Users/ryanloizzo/anaconda2/lib/python2.7/site-packages/sklearn/linear_model/base.py:340: RuntimeWarning: overflow encountered in exp
-  np.exp(prob, prob)
-/Users/ryanloizzo/anaconda2/lib/python2.7/site-packages/sklearn/linear_model/base.py:347: RuntimeWarning: invalid value encountered in true_divide
-  prob /= prob.sum(axis=1).reshape((prob.shape[0], -1))
-/Users/ryanloizzo/anaconda2/lib/python2.7/site-packages/sklearn/preprocessing/label.py:151: DeprecationWarning: The truth value of an empty array is ambiguous. Returning False, but in future this will result in an error. Use `array.size > 0` to check that an array is not empty.
-  if diff:
