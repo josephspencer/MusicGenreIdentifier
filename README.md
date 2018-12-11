@@ -26,3 +26,4 @@ In order to run the programs contained with in this project, the following pytho
 3 - electronic
 4 - hiphop
 5 - jazz
+6 - rock
