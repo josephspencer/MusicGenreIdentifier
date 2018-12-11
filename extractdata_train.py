@@ -2,6 +2,8 @@ import librosa
 import numpy as np
 import glob
 import sys
+import warnings
+warnings.filterwarnings("ignore")
 
 # This file is used to extract the data for the training set. This program is run by passing in the name of the directory that contains all of the mp3 files that will be used as the training set, as well as the name of the desired outputted csv file and the genre indicator.
 
