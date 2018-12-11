@@ -13,6 +13,8 @@ import numpy as np
 from sklearn.kernel_approximation import RBFSampler
 from sklearn.linear_model import SGDClassifier
 from sklearn import tree
+import warnings
+warnings.filterwarnings("ignore")
 
 def find_dist(point, centroid):
 	running_sum = 0.0
@@ -85,7 +87,7 @@ forest = RandomForestClassifier(n_estimators = 100, max_depth = 5)
 forest.fit(train_X, train_y)
 pred_y = forest.predict(test_X)
 print("random forest: " + str(pred_y))
-print(forest.predict_proba(test_X))
+#print(forest.predict_proba(test_X))
 
 #Weighted Average Ensemble
 ensemble = VotingClassifier(estimators=[('rf', forest), ('knn', knn), ('sgd', clf)], voting='soft')
