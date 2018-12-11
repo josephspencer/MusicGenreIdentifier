@@ -1,6 +1,7 @@
 import librosa
 import sys
 import pandas as pd
+import numpy
 from scipy import stats
 from sklearn.ensemble import RandomForestClassifier
 import numpy as np
@@ -10,31 +11,39 @@ from sklearn.linear_model import SGDClassifier
 from sklearn import tree
 from collections import Counter
 
+import warnings
+warnings.filterwarnings("ignore")
+
 # command line: python identify.py /path/to/testfile.mp3
 
 def genre(num):
 	if num == 1:
-		return "classical"
+		return "Classical"
 	elif num == 2:
-		return "country"
+		return "Country"
 	elif num == 3:
-		return "electronic"
+		return "Electronic"
 	elif num == 4:
-		return "hip hop"
+		return "Hip Hop"
 	elif num == 5:
-		return "jazz"
+		return "Jazz"
 	elif num == 6:
-		return "rock"
+		return "Rock"
 	return None
 
-def find_dist(point, centroid):
-	running_sum = 0.0
-	for i in range(len(point)):
-		running_sum += float(pow((point[i] - centroid[i]),2))
-	return pow(running_sum,0.5)
+def perc_format(perc):
+	return str(100*perc) + "%"
+
+def get_top_three(probs):
+	probs_sorted = sorted(probs, reverse=True)
+	genres_sorted = numpy.argsort(probs)[::-1]
+	g1 = {"prob": probs_sorted[0], "genre": genre(genres_sorted[0]+1)}
+	g2 = {"prob": probs_sorted[1], "genre": genre(genres_sorted[1]+1)}
+	g3 = {"prob": probs_sorted[2], "genre": genre(genres_sorted[2]+1)}
+	return g1, g2, g3
 
 def loadData(path):
-	print("Examining input file for audio data...\n")
+	print ("Examining input file for audio data...\n")
 	y, sr = librosa.core.load(path)
 	# get features
 	tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
@@ -82,7 +91,6 @@ train_y = train_data["genre"].as_matrix()
 
 # convert song data to pandas data frame for Machine Learning tool
 testIn = song_data.split(",")
-#testIn = pd.read_csv("testFile.csv", header=None, names=data_headers)
 test_data = pd.DataFrame([testIn], columns=data_headers)
 test_X = test_data.loc[:, "tempo":"mfcc_std"]
 test_X = test_X.as_matrix()
@@ -92,7 +100,16 @@ test_y = test_data["genre"].as_matrix()
 forest = RandomForestClassifier(n_estimators = 100)
 forest.fit(train_X, train_y)
 prediction = genre(forest.predict(test_X))
-prediction_prob = str(100*max(forest.predict_proba(test_X)[0])) + "%"
+#g1, g2, g3 = get_top_three(forest.predict_proba(test_X))
+pred_probs = forest.predict_proba(test_X)[0]
+#pred_probs_sorted = sorted(orest.predict_proba(test_X)[0], reverse=True)
+g1,g2,g3 = get_top_three(pred_probs)
 
-print ("We are " + prediction_prob + " sure that this song is a " + prediction + " song.")
-print forest.predict_proba(test_X)
+
+# output results
+print ("We are " + perc_format(g1["prob"]) + " sure that this song is a " + g1["genre"] + " song.")
+print ("Top three possible genres:")
+print (g1["genre"] + ": " + perc_format(g1["prob"]))
+print (g2["genre"] + ": " + perc_format(g2["prob"]))
+print (g3["genre"] + ": " + perc_format(g3["prob"]))
+
