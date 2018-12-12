@@ -83,7 +83,7 @@ pred_y = clf.predict(test_X)
 print("sgd: " + str(pred_y))
 
 #Random Forest
-forest = RandomForestClassifier(n_estimators = 100, max_depth = 5)
+forest = RandomForestClassifier(n_estimators = 100)
 forest.fit(train_X, train_y)
 pred_y = forest.predict(test_X)
 print("random forest: " + str(pred_y))
